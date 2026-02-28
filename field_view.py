@@ -76,11 +76,28 @@ def render_field_sales_view():
     if not invalid_locations.empty:
         invalid_locations['Distance'] = float('inf') # Put them at the end of the route
         optimized_df = pd.concat([optimized_df, invalid_locations])
+        
+    # Assign route order to top 15
+    optimized_df['Route_Order'] = None
+    valid_idx = optimized_df[optimized_df['Distance'] != float('inf')].index
+    for i, idx in enumerate(valid_idx[:15]):
+        optimized_df.at[idx, 'Route_Order'] = i + 1
     
     # Tabs for Map / List
     tab1, tab2 = st.tabs(["지도 보기", "리스트 보기 (상태 변경)"])
     
     with tab1:
+        st.markdown("#### 🚀 추천 방문 경로 리스트 (가까운 순 15곳)")
+        top_15_df = optimized_df[optimized_df['Route_Order'].notna()].copy()
+        if not top_15_df.empty:
+            top_15_df['직선거리'] = (top_15_df['Distance'] * 111).apply(lambda x: f"{x:.1f} km")
+            display_df = top_15_df[['Route_Order', 'Company Name', 'Status', '직선거리', 'Contact', 'Address']].rename(
+                columns={'Route_Order': '방문순서', 'Company Name': '상호', 'Status': '상태', 'Contact': '연락처', 'Address': '주소'}
+            )
+            display_df['방문순서'] = display_df['방문순서'].astype(int)
+            st.dataframe(display_df, hide_index=True, use_container_width=True)
+            
+        st.markdown("#### 🗺️ 현장 지도")
         # Folium Map
         m = folium.Map(location=[current_lat, current_lng], zoom_start=12)
         
@@ -93,7 +110,7 @@ def render_field_sales_view():
         # Add Current Location Marker
         folium.Marker(
             location=[current_lat, current_lng],
-            popup="<b>기준 위치(출발점)</b>",
+            popup="<div style='width: 150px;'><b>📍 기준 위치(출발점)</b></div>",
             icon=folium.Icon(color='black', icon='user')
         ).add_to(m)
         
@@ -124,22 +141,38 @@ def render_field_sales_view():
             else:
                 color = 'blue'
                 
+            order_text = f"[{int(row['Route_Order'])}] " if pd.notna(row['Route_Order']) else ""
+            distance_km = f"{row['Distance'] * 111:.1f}km" if pd.notna(row['Route_Order']) else ""
+            dist_html = f"<div style='margin-bottom: 4px;'><b>직선거리:</b> <span style='color:#27AE60; font-weight:bold;'>{distance_km}</span></div>" if distance_km else ""
+                
             popup_html = f"""
             <div style="font-family: Arial, sans-serif; font-size: 13px; border: 1px solid #ddd; background-color: white; padding: 12px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 220px;">
-                <h4 style="margin-top: 0; margin-bottom: 8px; color: #2C3E50; font-size: 15px;">🏢 {row['Company Name']}</h4>
+                <h4 style="margin-top: 0; margin-bottom: 8px; color: #2C3E50; font-size: 15px;">🏢 {order_text}{row['Company Name']}</h4>
                 <div style="border-bottom: 1px solid #eee; margin-bottom: 8px;"></div>
                 <div style="margin-bottom: 4px;"><b>상태:</b> <span style="color:{color}; font-weight:bold;">{row['Status']}</span></div>
+                {dist_html}
                 <div style="margin-bottom: 4px;"><b>정지사유:</b> {row['Stop Reason']}</div>
                 <div style="margin-bottom: 4px;"><b>정지일자:</b> {row['Stop Start Date']}</div>
                 <div style="margin-bottom: 4px;"><b>당월정지:</b> <span style="color:#E74C3C;">{row['Stop Days']}일</span></div>
             </div>
             """
             
+            # Formatted Icons: Add numbers for top 15
+            if pd.notna(row['Route_Order']):
+                icon = plugins.BeautifyIcon(
+                    border_color=color,
+                    text_color=color,
+                    number=int(row['Route_Order']),
+                    inner_icon_style='margin-top:0; font-weight:bold;'
+                )
+            else:
+                icon = folium.Icon(color=color, icon='info-sign')
+            
             folium.Marker(
                 location=[row['Latitude'], row['Longitude']],
                 popup=folium.Popup(popup_html, max_width=300),
-                tooltip=row['Company Name'],
-                icon=folium.Icon(color=color, icon='info-sign')
+                tooltip=f"{order_text}{row['Company Name']} {distance_km}",
+                icon=icon
             ).add_to(m)
             
         # returned_objects=[] prevents Streamlit from waiting for interaction data (Fast speed boost)
