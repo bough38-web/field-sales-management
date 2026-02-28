@@ -1,0 +1,6 @@
+Branch,Contract No,Company Name,Monthly Fee,Manager,Contact,Address,Latitude,Longitude,Status,Checked
+Seoul,C001,Alpha Tech,100000,Alice,010-1111-2222,Seoul City Hall,37.5665,126.978,미확인,False
+Seoul,C002,Beta Corp,150000,Alice,010-3333-4444,Gangnam Station,37.4979,127.0276,진행중,True
+Busan,C003,Gamma Inc,120000,Bob,010-5555-6666,Busan Station,35.1152,129.0422,완료,True
+Busan,C004,Delta LLC,200000,Bob,010-7777-8888,Haeundae Beach,35.1587,129.1604,미확인,False
+Daegu,C005,Epsilon Co,90000,Charlie,010-9999-0000,Dongdaegu Station,35.8797,128.6285,진행중,True
