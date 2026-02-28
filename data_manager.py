@@ -72,6 +72,45 @@ def init_db():
             }
             pd.DataFrame(data).to_csv(DB_FILE, index=False)
 
+def apply_custom_mapping(raw_df, mapping):
+    """
+    Applies custom UI-mapped columns to the application dataframe schema,
+    saves the DB, and fires off a background thread for geocoding.
+    """
+    df = pd.DataFrame()
+    df['Branch'] = raw_df[mapping['Branch']]
+    df['Contract No'] = raw_df[mapping['Contract No']]
+    df['Company Name'] = raw_df[mapping['Company Name']]
+    df['Monthly Fee'] = raw_df[mapping['Monthly Fee']]
+    df['Manager'] = raw_df[mapping['Manager']]
+    df['Contact'] = raw_df[mapping['Contact']]
+    df['Address'] = raw_df[mapping['Address']]
+    df['Stop Reason'] = raw_df[mapping['Stop Reason']]
+    df['Stop Start Date'] = pd.to_datetime(raw_df[mapping['Stop Start Date']], errors='coerce').dt.strftime('%Y-%m-%d')
+    df['Stop Days'] = raw_df[mapping['Stop Days']]
+    
+    # Additional columns
+    df['Latitude'] = None
+    df['Longitude'] = None
+    df['Status'] = '미확인'
+    df['Checked'] = False
+    
+    # Clean up potential NaNs
+    df['Manager'] = df['Manager'].fillna('미배정')
+    df['Address'] = df['Address'].fillna('주소없음')
+    df['Contact'] = df['Contact'].fillna('연락처없음')
+    df['Stop Reason'] = df['Stop Reason'].fillna('정상')
+    df['Stop Start Date'] = df['Stop Start Date'].fillna('-')
+    df['Stop Days'] = df['Stop Days'].fillna(0)
+    df['Monthly Fee'] = pd.to_numeric(df['Monthly Fee'], errors='coerce').fillna(0)
+    
+    df.to_csv(DB_FILE, index=False)
+    
+    if 'get_cached_data' in globals():
+        get_cached_data.clear()
+        
+    return df
+
 import streamlit as st
 
 @st.cache_data(ttl=3600)
