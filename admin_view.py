@@ -30,7 +30,7 @@ def render_admin_dashboard():
         status_summary.columns = ['상태', '건수']
         fig = px.pie(status_summary, values='건수', names='상태', hole=0.3,
                      color='상태', color_discrete_map={'완료':'blue', '진행중':'orange', '미확인':'red'})
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True) # Plotly chart might still use it, we will keep it for plotly to be safe. 
 
     with chart_col2:
         st.subheader("⚠️ 미확인 사원 리스트 (Action Required)")
@@ -40,7 +40,7 @@ def render_admin_dashboard():
             st.warning(f"총 {len(unchecked_df)}건의 미확인 항목이 있습니다.")
             st.dataframe(
                 unchecked_df[['Branch', 'Manager', 'Company Name', 'Contact']],
-                use_container_width=True,
+                width='stretch',
                 hide_index=True
             )
         else:
@@ -48,4 +48,4 @@ def render_admin_dashboard():
 
     st.markdown("---")
     st.subheader("전체 데이터 보기")
-    st.dataframe(df, use_container_width=True)
+    st.dataframe(df, width='stretch')
