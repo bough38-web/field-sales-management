@@ -17,6 +17,14 @@ if 'authenticated' not in st.session_state:
 if 'role' not in st.session_state:
     st.session_state['role'] = None
 
+# Hide sidebar on the landing page
+st.markdown("""
+    <style>
+        [data-testid="stSidebarNav"] {display: none;}
+        [data-testid="stSidebar"] {display: none;}
+    </style>
+""", unsafe_allow_html=True)
+
 st.title("🏢 현장 영업관리 시스템")
 st.markdown("---")
 st.write("보안을 위해 역할을 선택하고 비밀번호를 입력해주세요.")

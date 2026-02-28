@@ -15,5 +15,13 @@ if not st.session_state.get('authenticated') or st.session_state.get('role') != 
 # Ensure DB is initialized
 data_manager.init_db()
 
+# Hide sidebar for the Field Staff View
+st.markdown("""
+    <style>
+        [data-testid="stSidebarNav"] {display: none;}
+        [data-testid="stSidebar"] {display: none;}
+    </style>
+""", unsafe_allow_html=True)
+
 # Render the Field Staff View
 render_field_sales_view()
