@@ -98,8 +98,24 @@ def render_field_sales_view():
             st.dataframe(display_df, hide_index=True, use_container_width=True)
             
         st.markdown("#### 🗺️ 현장 지도")
-        # Folium Map
-        m = folium.Map(location=[current_lat, current_lng], zoom_start=12)
+        # Folium Map with Base Layers
+        m = folium.Map(location=[current_lat, current_lng], zoom_start=14, tiles=None)
+        
+        # 1. Default OpenStreetMap (Regular Roads)
+        folium.TileLayer('OpenStreetMap', name='기본 도로망 (OpenStreetMap)').add_to(m)
+        
+        # 2. Vworld/CartoDB (Clean layout)
+        folium.TileLayer('CartoDB positron', name='깔끔한 약도 (CartoDB)').add_to(m)
+        
+        # 3. Google Satellite Hybrid (Detailed buildings & roads)
+        folium.TileLayer(
+            tiles='http://mt0.google.com/vt/lyrs=y&hl=ko&x={x}&y={y}&z={z}',
+            attr='Google',
+            name='위성 및 상세 도로망 (Google Hybrid)'
+        ).add_to(m)
+        
+        # Add Layer Control to toggle the map styles
+        folium.LayerControl(position='topright').add_to(m)
         
         # Add Locate Control (내 위치 이동 버튼)
         plugins.LocateControl(
