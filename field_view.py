@@ -33,12 +33,26 @@ def render_field_sales_view():
         st.info("할당된 고객사가 없습니다.")
         return
         
-    # Mock Current Location (using the first location for demo purposes, offset slightly)
-    current_lat = my_df.iloc[0]['Latitude'] - 0.01
-    current_lng = my_df.iloc[0]['Longitude'] - 0.01
+    # Default Location (Seoul City Hall) in case all coordinates are NaN
+    current_lat = 37.5665
+    current_lng = 126.9780
+    
+    # Try to find the first valid customer location to center the map
+    valid_locations = my_df.dropna(subset=['Latitude', 'Longitude'])
+    if not valid_locations.empty:
+        current_lat = valid_locations.iloc[0]['Latitude'] - 0.01
+        current_lng = valid_locations.iloc[0]['Longitude'] - 0.01
     
     st.subheader("📍 방문 리스트 및 최적 경로")
-    optimized_df = optimize_route(current_lat, current_lng, my_df)
+    
+    # Filter out NaNs BEFORE route optimization to prevent euclidean distance crash
+    optimized_df = optimize_route(current_lat, current_lng, valid_locations)
+    
+    # We still want to show the invalid ones in the list below, so we'll append them
+    invalid_locations = my_df[my_df['Latitude'].isna() | my_df['Longitude'].isna()].copy()
+    if not invalid_locations.empty:
+        invalid_locations['Distance'] = float('inf') # Put them at the end of the route
+        optimized_df = pd.concat([optimized_df, invalid_locations])
     
     # Tabs for Map / List
     tab1, tab2 = st.tabs(["지도 보기", "리스트 보기 (상태 변경)"])
