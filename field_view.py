@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import folium
+from folium import plugins
 from streamlit_folium import st_folium
 from scipy.spatial.distance import cdist
 import data_manager
@@ -83,12 +84,33 @@ def render_field_sales_view():
         # Folium Map
         m = folium.Map(location=[current_lat, current_lng], zoom_start=12)
         
+        # Add Locate Control (내 위치 이동 버튼)
+        plugins.LocateControl(
+            position="topright",
+            strings={"title": "내 실시간 위치 찾기", "popup": "현재 위치"},
+        ).add_to(m)
+        
         # Add Current Location Marker
         folium.Marker(
             location=[current_lat, current_lng],
-            popup="<b>내 위치</b>",
+            popup="<b>기준 위치(출발점)</b>",
             icon=folium.Icon(color='black', icon='user')
         ).add_to(m)
+        
+        # Guide Option: Draw animated line to top 15 nearest locations
+        valid_targets = optimized_df.dropna(subset=['Latitude', 'Longitude'])
+        if not valid_targets.empty:
+            top_15 = valid_targets.head(15)
+            route_coords = [[current_lat, current_lng]] + top_15[['Latitude', 'Longitude']].values.tolist()
+            plugins.AntPath(
+                locations=route_coords,
+                dash_array=[10, 20],
+                delay=1000,
+                color='red',
+                pulse_color='white',
+                weight=3,
+                tooltip='최적 방문 경로 가이드 (상위 15곳)'
+            ).add_to(m)
         
         # Add Customer Markers
         for _, row in optimized_df.iterrows():
@@ -102,11 +124,16 @@ def render_field_sales_view():
             else:
                 color = 'blue'
                 
-            popup_html = (f"<b>{row['Company Name']}</b>"
-                          f"<br>상태: {row['Status']}"
-                          f"<br>정지사유: {row['Stop Reason']}"
-                          f"<br>정지일자: {row['Stop Start Date']}"
-                          f"<br>당월정지: {row['Stop Days']}일")
+            popup_html = f"""
+            <div style="font-family: Arial, sans-serif; font-size: 13px; border: 1px solid #ddd; background-color: white; padding: 12px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 220px;">
+                <h4 style="margin-top: 0; margin-bottom: 8px; color: #2C3E50; font-size: 15px;">🏢 {row['Company Name']}</h4>
+                <div style="border-bottom: 1px solid #eee; margin-bottom: 8px;"></div>
+                <div style="margin-bottom: 4px;"><b>상태:</b> <span style="color:{color}; font-weight:bold;">{row['Status']}</span></div>
+                <div style="margin-bottom: 4px;"><b>정지사유:</b> {row['Stop Reason']}</div>
+                <div style="margin-bottom: 4px;"><b>정지일자:</b> {row['Stop Start Date']}</div>
+                <div style="margin-bottom: 4px;"><b>당월정지:</b> <span style="color:#E74C3C;">{row['Stop Days']}일</span></div>
+            </div>
+            """
             
             folium.Marker(
                 location=[row['Latitude'], row['Longitude']],
@@ -120,7 +147,7 @@ def render_field_sales_view():
     
     with tab2:
         st.caption("고객사를 클릭하여 상세 정보 확인 및 상태를 업데이트 하세요.")
-        for _, row in optimized_df.iterrows():
+        for idx, row in optimized_df.iterrows():
             with st.expander(f"🏢 {row['Company Name']} - 현재 상태: [{row['Status']}]"):
                 st.write(f"**연락처**: {row['Contact']}")
                 st.write(f"**주소**: {row['Address']}")
@@ -142,18 +169,19 @@ def render_field_sales_view():
                     return callback
                 
                 # Use callbacks to update state and trigger rerun
+                # Note: Appended `idx` to the key to prevent StreamlitDuplicateElementKey when multiple items share a contract_no
                 with col1:
-                    st.button("진행전(미확인)", key=f"btn_un_{row['Contract No']}", 
+                    st.button("진행전(미확인)", key=f"btn_un_{row['Contract No']}_{idx}", 
                               on_click=make_update_callback(row['Contract No'], "미확인"),
                               use_container_width=True,
                               disabled=row['Status'] == "미확인")
                 with col2:
-                    st.button("진행중", key=f"btn_ing_{row['Contract No']}",
+                    st.button("진행중", key=f"btn_ing_{row['Contract No']}_{idx}",
                               on_click=make_update_callback(row['Contract No'], "진행중"),
                               use_container_width=True,
                               disabled=row['Status'] == "진행중")
                 with col3:
-                    st.button("완료", key=f"btn_done_{row['Contract No']}",
+                    st.button("완료", key=f"btn_done_{row['Contract No']}_{idx}",
                               on_click=make_update_callback(row['Contract No'], "완료"),
                               use_container_width=True,
                               disabled=row['Status'] == "완료")
