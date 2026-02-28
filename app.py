@@ -3,19 +3,49 @@ import data_manager
 
 # Page Configuration
 st.set_page_config(
-    page_title="현장 영업관리 프로그램 홈",
+    page_title="현장 영업관리 프로그램 로그인",
     page_icon="🏢",
-    layout="wide"
+    layout="centered"
 )
 
 # Initialize Database on First Run
 data_manager.init_db()
 
-st.title("🏢 현장 영업관리 프로그램")
+# Initialize Session State
+if 'authenticated' not in st.session_state:
+    st.session_state['authenticated'] = False
+if 'role' not in st.session_state:
+    st.session_state['role'] = None
+
+st.title("🏢 현장 영업관리 시스템")
 st.markdown("---")
-st.write("### 환영합니다!")
-st.write("각기 다른 웹 주소로 분리된 시스템입니다. **좌측 사이드바(화살표 〉 모양 클릭)**에서 원하는 메뉴로 이동해주세요.")
-st.write("")
-st.write("- **[관리자 대시보드]**: 전체 영업 현황과 확인되지 않은 업무를 파악할 수 있는 권한자용 페이지입니다.")
-st.write("- **[현장사원 뷰]**: 지도 기반으로 내 주변 고객사를 확인하고, 방문 상태를 즉시 업데이트할 수 있는 모바일 최적화 페이지입니다.")
+st.write("보안을 위해 역할을 선택하고 비밀번호를 입력해주세요.")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    st.subheader("👨‍💼 관리자 로그인")
+    st.caption("초기 비밀번호: admin123")
+    admin_pw = st.text_input("관리자 비밀번호", type="password", key="admin_pw")
+    if st.button("관리자 접속", use_container_width=True):
+        if admin_pw == "admin123":
+            st.session_state['authenticated'] = True
+            st.session_state['role'] = 'admin'
+            st.success("로그인 성공!")
+            st.switch_page("pages/1_Admin_Dashboard.py")
+        else:
+            st.error("비밀번호가 일치하지 않습니다.")
+
+with col2:
+    st.subheader("🏃‍♂️ 현장사원 로그인")
+    st.caption("초기 비밀번호: field123")
+    field_pw = st.text_input("사원 비밀번호", type="password", key="field_pw")
+    if st.button("현장사원 접속", use_container_width=True):
+        if field_pw == "field123":
+            st.session_state['authenticated'] = True
+            st.session_state['role'] = 'field'
+            st.success("로그인 성공!")
+            st.switch_page("pages/2_Field_Staff_View.py")
+        else:
+            st.error("비밀번호가 일치하지 않습니다.")
 
