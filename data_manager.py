@@ -47,6 +47,10 @@ def init_db():
             
             df.to_csv(DB_FILE, index=False)
             print(f"Successfully imported {len(df)} records into {DB_FILE}")
+            
+            # Trigger geocoding only during the first initialization
+            geocode_missing(df)
+            
         except Exception as e:
             print(f"Error importing Excel: {e}")
             # Fallback mock data if excel fails or doesn't exist
@@ -72,20 +76,35 @@ import streamlit as st
 
 @st.cache_data(ttl=3600)
 def get_cached_data():
+    # Only load data, no slow API calls here
     df = pd.read_csv(DB_FILE)
-    geolocator = Nominatim(user_agent="field_sales_app")
-    geocode = RateLimiter(geolocator.geocode, min_delay_seconds=1)
-    
-    missing_mask = df['Latitude'].isna() | df['Longitude'].isna()
-    if missing_mask.any():
-        for idx, row in df[missing_mask].iterrows():
-            location = geocode(row['Address'])
-            if location:
-                df.at[idx, 'Latitude'] = location.latitude
-                df.at[idx, 'Longitude'] = location.longitude
-        df.to_csv(DB_FILE, index=False)
-    
     return df
+
+def geocode_missing(df=None):
+    if df is None:
+        if not os.path.exists(DB_FILE):
+            return
+        df = pd.read_csv(DB_FILE)
+        
+    print("Checking for missing coordinates...")
+    missing_mask = df['Latitude'].isna() | df['Longitude'].isna()
+    
+    if missing_mask.any():
+        print(f"Geocoding {missing_mask.sum()} missing coordinates...")
+        geolocator = Nominatim(user_agent="field_sales_app")
+        geocode = RateLimiter(geolocator.geocode, min_delay_seconds=1.5)
+        
+        for idx, row in df[missing_mask].iterrows():
+            try:
+                location = geocode(row['Address'])
+                if location:
+                    df.at[idx, 'Latitude'] = location.latitude
+                    df.at[idx, 'Longitude'] = location.longitude
+            except Exception as e:
+                print(f"Geocoding failed for {row['Address']}: {e}")
+                
+        df.to_csv(DB_FILE, index=False)
+        get_cached_data.clear() # Clear cache so UI picks up new coordinates
 
 def get_data(query_filters=None):
     df = get_cached_data()
@@ -106,8 +125,9 @@ def update_checked(contract_no, is_checked):
     df.to_csv(DB_FILE, index=False)
     get_cached_data.clear() # Clear cache on update
 
-def geocode_missing():
-    pass
+def manual_geocode():
+    # Helper if we need to call it from UI
+    geocode_missing()
 
 if __name__ == "__main__":
     init_db()
