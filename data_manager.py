@@ -25,6 +25,11 @@ def init_db():
             df['Contact'] = raw_df['휴대폰']
             df['Address'] = raw_df['설치주소']
             
+            # New columns based on request
+            df['Stop Reason'] = raw_df['정지사유']
+            df['Stop Start Date'] = raw_df['정지시작일자']
+            df['Stop Days'] = raw_df['당월말_정지일수']
+            
             # Additional columns
             df['Latitude'] = None
             df['Longitude'] = None
@@ -35,6 +40,9 @@ def init_db():
             df['Manager'] = df['Manager'].fillna('미배정')
             df['Address'] = df['Address'].fillna('주소없음')
             df['Contact'] = df['Contact'].fillna('연락처없음')
+            df['Stop Reason'] = df['Stop Reason'].fillna('정상')
+            df['Stop Start Date'] = df['Stop Start Date'].fillna('-')
+            df['Stop Days'] = df['Stop Days'].fillna(0)
             df['Monthly Fee'] = pd.to_numeric(df['Monthly Fee'], errors='coerce').fillna(0)
             
             df.to_csv(DB_FILE, index=False)
@@ -50,6 +58,9 @@ def init_db():
                 "Manager": ["Alice"],
                 "Contact": ["010-0000-0000"],
                 "Address": ["Seoul City Hall"],
+                "Stop Reason": ["-"],
+                "Stop Start Date": ["-"],
+                "Stop Days": [0],
                 "Latitude": [37.5665],
                 "Longitude": [126.9780],
                 "Status": ["미확인"],

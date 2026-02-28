@@ -80,7 +80,11 @@ def render_field_sales_view():
             else:
                 color = 'blue'
                 
-            popup_html = f"<b>{row['Company Name']}</b><br>상태: {row['Status']}"
+            popup_html = (f"<b>{row['Company Name']}</b>"
+                          f"<br>상태: {row['Status']}"
+                          f"<br>정지사유: {row['Stop Reason']}"
+                          f"<br>정지일자: {row['Stop Start Date']}"
+                          f"<br>당월정지: {row['Stop Days']}일")
             
             folium.Marker(
                 location=[row['Latitude'], row['Longitude']],
@@ -98,6 +102,9 @@ def render_field_sales_view():
                 st.write(f"**연락처**: {row['Contact']}")
                 st.write(f"**주소**: {row['Address']}")
                 st.write(f"**월정료**: {row['Monthly Fee']:,}원")
+                st.write(f"**정지사유**: {row['Stop Reason']}")
+                st.write(f"**정지시작일자**: {row['Stop Start Date']}")
+                st.write(f"**당월말 정지일수**: {row['Stop Days']}일")
                 st.write(f"**현재 위치로부터 거리**: {row['Distance']*111:.2f} km (예상치)") # Rough conversion degree to km
                 
                 # Status Change Actions
