@@ -33,6 +33,28 @@ def render_field_sales_view():
         st.info("할당된 고객사가 없습니다.")
         return
         
+    # Expert-level Search & Filter Options
+    with st.expander("🔍 검색 및 필터 옵션 (전문가 옵션)", expanded=False):
+        col1, col2 = st.columns(2)
+        with col1:
+            search_query = st.text_input("상호명 검색", placeholder="예: 스타벅스")
+        with col2:
+            status_filter = st.multiselect(
+                "방문 상태 필터", 
+                options=['미확인', '진행중', '완료'],
+                default=['미확인', '진행중', '완료']
+            )
+            
+    # Apply Filters
+    if search_query:
+        my_df = my_df[my_df['Company Name'].str.contains(search_query, case=False, na=False)]
+    if status_filter:
+        my_df = my_df[my_df['Status'].isin(status_filter)]
+        
+    if len(my_df) == 0:
+        st.warning("조건에 맞는 고객사가 없습니다. 필터를 조정해주세요.")
+        return
+        
     # Default Location (Seoul City Hall) in case all coordinates are NaN
     current_lat = 37.5665
     current_lng = 126.9780
@@ -93,7 +115,8 @@ def render_field_sales_view():
                 icon=folium.Icon(color=color, icon='info-sign')
             ).add_to(m)
             
-        st_data = st_folium(m, width=800, height=500)
+        # returned_objects=[] prevents Streamlit from waiting for interaction data (Fast speed boost)
+        st_data = st_folium(m, width=800, height=500, returned_objects=[])
     
     with tab2:
         st.caption("고객사를 클릭하여 상세 정보 확인 및 상태를 업데이트 하세요.")

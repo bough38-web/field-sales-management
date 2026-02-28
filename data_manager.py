@@ -27,7 +27,7 @@ def init_db():
             
             # New columns based on request
             df['Stop Reason'] = raw_df['정지사유']
-            df['Stop Start Date'] = raw_df['정지시작일자']
+            df['Stop Start Date'] = pd.to_datetime(raw_df['정지시작일자'], errors='coerce').dt.strftime('%Y-%m-%d')
             df['Stop Days'] = raw_df['당월말_정지일수']
             
             # Additional columns
