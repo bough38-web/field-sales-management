@@ -56,6 +56,9 @@ def render_field_sales_view():
         
         # Add Customer Markers
         for _, row in optimized_df.iterrows():
+            if pd.isna(row['Latitude']) or pd.isna(row['Longitude']):
+                continue # Skip if location could not be geocoded
+                
             if row['Status'] == '미확인':
                 color = 'red'
             elif row['Status'] == '진행중':
